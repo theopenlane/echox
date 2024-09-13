@@ -303,12 +303,12 @@ func TestEcho_StaticPanic(t *testing.T) {
 		{
 			name:        "panics for ../",
 			givenRoot:   "../assets",
-			expectError: "can not create sub FS, invalid root given, err: sub ../assets: invalid name",
+			expectError: "can not create sub FS, invalid root given, err: sub ../assets: invalid argument",
 		},
 		{
 			name:        "panics for /",
 			givenRoot:   "/assets",
-			expectError: "can not create sub FS, invalid root given, err: sub /assets: invalid name",
+			expectError: "can not create sub FS, invalid root given, err: sub /assets: invalid argument",
 		},
 	}
 

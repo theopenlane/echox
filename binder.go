@@ -229,6 +229,7 @@ func (b *ValueBinder) customFunc(sourceParam string, customFunc func(values []st
 	}
 
 	values := b.ValuesFunc(sourceParam)
+
 	if len(values) == 0 {
 		if valueMustExist {
 			b.setError(b.ErrorFunc(sourceParam, []string{}, "required field value is empty", nil))
@@ -547,6 +548,7 @@ func (b *ValueBinder) intValue(sourceParam string, dest interface{}, bitSize int
 	return b.int(sourceParam, value, dest, bitSize)
 }
 
+// #nosec: G115
 func (b *ValueBinder) int(sourceParam string, value string, dest interface{}, bitSize int) *ValueBinder {
 	n, err := strconv.ParseInt(value, 10, bitSize)
 	if err != nil {
@@ -795,6 +797,7 @@ func (b *ValueBinder) uintValue(sourceParam string, dest interface{}, bitSize in
 	return b.uint(sourceParam, value, dest, bitSize)
 }
 
+// #nosec: G115
 func (b *ValueBinder) uint(sourceParam string, value string, dest interface{}, bitSize int) *ValueBinder {
 	n, err := strconv.ParseUint(value, 10, bitSize)
 	if err != nil {

@@ -745,12 +745,12 @@ func TestGroup_StaticPanic(t *testing.T) {
 		{
 			name:        "panics for ../",
 			givenRoot:   "../images",
-			expectError: "can not create sub FS, invalid root given, err: sub ../images: invalid name",
+			expectError: "can not create sub FS, invalid root given, err: sub ../images: invalid argument",
 		},
 		{
 			name:        "panics for /",
 			givenRoot:   "/images",
-			expectError: "can not create sub FS, invalid root given, err: sub /images: invalid name",
+			expectError: "can not create sub FS, invalid root given, err: sub /images: invalid argument",
 		},
 	}
 

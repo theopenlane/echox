@@ -92,6 +92,7 @@ func (r routeInfo) Reverse(params ...interface{}) string {
 			// in case of `*` wildcard or `:` (unescaped colon) param we replace everything till next slash or end of path
 			for ; i < l && r.path[i] != '/'; i++ {
 			}
+
 			uri.WriteString(fmt.Sprintf("%v", params[n]))
 
 			n++
