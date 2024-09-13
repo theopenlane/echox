@@ -229,6 +229,7 @@ func bindData(destination interface{}, data map[string][]string, tag string) err
 					return err
 				}
 			}
+
 			val.Field(i).Set(slice)
 		} else if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField); err != nil {
 			return err
