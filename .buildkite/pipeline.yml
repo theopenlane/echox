@@ -7,11 +7,22 @@ steps:
     steps:
       - label: ":golangci-lint: lint :lint-roller:"
         key: "lint"
+        cancel_on_build_failing: true
         plugins:
           - docker#v5.11.0:
-              image: "registry.hub.docker.com/golangci/golangci-lint:latest-alpine"
-              command: ["golangci-lint", "run", "-v"]
+              image: "ghcr.io/theopenlane/build-image:latest"
               always-pull: true
+              command: ["task", "go:lint"]
+              environment:
+                - "GOTOOLCHAIN=auto"
+      - label: ":golang: go test"
+        key: "go_test"
+        cancel_on_build_failing: true
+        plugins:
+          - docker#v5.11.0:
+              image: "ghcr.io/theopenlane/build-image:latest"
+              always-pull: true
+              command: ["task", "go:test:cover"]
               environment:
                 - "GOTOOLCHAIN=auto"
         artifact_paths: ["coverage.out"]
@@ -36,7 +47,7 @@ steps:
           - artifacts#v1.9.4:
               download: "results.txt"
           - docker#v5.11.0:
-              image: "sonarsource/sonar-scanner-cli:5"
+              image: "sonarsource/sonar-scanner-cli:11"
               environment:
                 - "SONAR_TOKEN"
                 - "SONAR_HOST_URL=$SONAR_HOST"
