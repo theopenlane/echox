@@ -125,12 +125,17 @@ func TestStartConfig_Start(t *testing.T) {
 		return
 	}
 
-	expectContains := "connect: connection refused"
-	if runtime.GOOS == "windows" {
+	var expectContains string
+	switch runtime.GOOS {
+	case "windows":
 		expectContains = "No connection could be made"
+	case "linux":
+		expectContains = "connect: cannot assign requested address"
+	default:
+		expectContains = "connect: connection refused"
 	}
 
-	assert.True(t, strings.Contains(err.Error(), expectContains))
+	assert.ErrorContains(t, err, expectContains)
 }
 
 func TestStartConfig_GracefulShutdown(t *testing.T) {
@@ -225,12 +230,17 @@ func TestStartConfig_GracefulShutdown(t *testing.T) {
 			assert.Error(t, err)
 
 			if err != nil {
-				expectContains := "connect: connection refused"
-				if runtime.GOOS == "windows" {
+				var expectContains string
+				switch runtime.GOOS {
+				case "windows":
 					expectContains = "No connection could be made"
+				case "linux":
+					expectContains = "connect: cannot assign requested address"
+				default:
+					expectContains = "connect: connection refused"
 				}
 
-				assert.True(t, strings.Contains(err.Error(), expectContains))
+				assert.ErrorContains(t, err, expectContains)
 			}
 
 			assert.Equal(t, 0, code)
