@@ -34,7 +34,7 @@ steps:
         key: "gosec"
         plugins:
           - docker#v5.11.0:
-              image: "registry.hub.docker.com/securego/gosec:2.20.0"
+              image: "securego/gosec:2.20.0"
               command: ["-no-fail", "-exclude-generated", "-fmt sonarqube", "-out", "results.txt", "./..."]
               environment:
                 - "GOTOOLCHAIN=auto"
@@ -42,10 +42,13 @@ steps:
       - label: ":github: upload PR reports"
         key: "scan-upload-pr"
         if: build.pull_request.id != null
-        depends_on: ["gosec"]
+        depends_on: ["gosec", "go_test"]
         plugins:
           - artifacts#v1.9.4:
               download: "results.txt"
+          - artifacts#v1.9.4:
+              download: "coverage.out"
+              step: "go_test"
           - docker#v5.11.0:
               image: "sonarsource/sonar-scanner-cli:11"
               environment:
@@ -55,12 +58,15 @@ steps:
       - label: ":github: upload reports"
         key: "scan-upload"
         if: build.branch == "main"
-        depends_on: ["gosec"]
+        depends_on: ["gosec", "go_test"]
         plugins:
           - artifacts#v1.9.4:
               download: results.txt
+          - artifacts#v1.9.4:
+              download: coverage.out
+              step: "go_test"
           - docker#v5.11.0:
-              image: "sonarsource/sonar-scanner-cli:5"
+              image: "sonarsource/sonar-scanner-cli:11"
               environment:
                 - "SONAR_TOKEN"
                 - "SONAR_HOST_URL=$SONAR_HOST"
