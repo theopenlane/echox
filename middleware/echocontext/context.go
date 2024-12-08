@@ -3,16 +3,10 @@ package echocontext
 import (
 	"context"
 
+	"github.com/theopenlane/utils/contextx"
+
 	echo "github.com/theopenlane/echox"
 )
-
-// EchoContextKey is the context key for the echo.Context
-var EchoContextKey = &ContextKey{"EchoContextKey"}
-
-// ContextKey is the key name for the additional context
-type ContextKey struct {
-	name string
-}
 
 // CustomContext contains the echo.Context and request context.Context
 type CustomContext struct {
@@ -24,7 +18,7 @@ type CustomContext struct {
 func EchoContextToContextMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			ctx := context.WithValue(c.Request().Context(), EchoContextKey, c)
+			ctx := contextx.With(c.Request().Context(), c)
 
 			c.SetRequest(c.Request().WithContext(ctx))
 
@@ -37,16 +31,9 @@ func EchoContextToContextMiddleware() echo.MiddlewareFunc {
 
 // EchoContextFromContext gets the echo.Context from the parent context
 func EchoContextFromContext(ctx context.Context) (echo.Context, error) {
-	// retrieve echo.Context from provided context
-	echoContext := ctx.Value(EchoContextKey)
-	if echoContext == nil {
-		return nil, ErrUnableToRetrieveEchoContext
-	}
-
-	// type cast the context to ensure echo.Context
-	ec, ok := echoContext.(echo.Context)
+	ec, ok := contextx.From[echo.Context](ctx)
 	if !ok {
-		return ec, ErrUnableToRetrieveEchoContext
+		return nil, ErrUnableToRetrieveEchoContext
 	}
 
 	return ec, nil
