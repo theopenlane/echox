@@ -29,7 +29,7 @@ func NewTestEchoContext() echo.Context {
 
 func NewTestContext() context.Context {
 	c := NewTestEchoContext()
-	ctx := contextx.With(context.Background(), c)
+	ctx := contextx.With(c.Request().Context(), c)
 
 	c.SetRequest(c.Request().WithContext(ctx))
 
