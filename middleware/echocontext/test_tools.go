@@ -8,6 +8,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/theopenlane/utils/contextx"
+
 	echo "github.com/theopenlane/echox"
 )
 
@@ -27,7 +29,7 @@ func NewTestEchoContext() echo.Context {
 
 func NewTestContext() context.Context {
 	c := NewTestEchoContext()
-	ctx := context.WithValue(c.Request().Context(), EchoContextKey, c)
+	ctx := contextx.With(c.Request().Context(), c)
 
 	c.SetRequest(c.Request().WithContext(ctx))
 
