@@ -57,7 +57,8 @@ func BindQueryParams(c Context, i interface{}) error {
 // See MIMEMultipartForm: https://golang.org/pkg/net/http/#Request.ParseMultipartForm
 func BindBody(c Context, i interface{}) (err error) {
 	req := c.Request()
-	if req.ContentLength == 0 {
+	// https://github.com/labstack/echo/pull/2717/files
+	if req.ContentLength <= 0 {
 		return
 	}
 

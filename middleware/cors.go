@@ -257,7 +257,8 @@ func (config CORSConfig) ToMiddleware() (echox.MiddlewareFunc, error) {
 			// Origin not allowed
 			if allowOrigin == "" {
 				if !preflight {
-					return next(c)
+					// https://github.com/labstack/echo/pull/2732/files
+					return echox.ErrUnauthorized
 				}
 
 				return c.NoContent(http.StatusNoContent)

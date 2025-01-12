@@ -43,7 +43,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"net/http"
 	"net/url"
@@ -121,11 +120,6 @@ type MiddlewareConfigurator interface {
 // Validator is the interface that wraps the Validate function.
 type Validator interface {
 	Validate(i interface{}) error
-}
-
-// Renderer is the interface that wraps the Render function.
-type Renderer interface {
-	Render(io.Writer, string, interface{}, Context) error
 }
 
 // Map defines a generic map of type `map[string]interface{}`.
