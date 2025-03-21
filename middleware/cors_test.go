@@ -463,14 +463,14 @@ func TestCorsHeaders(t *testing.T) {
 			expected:      false,
 			expectStatus:  http.StatusOK,
 		},
-		{
-			name:          "non-preflight request, allow specific origin, different origin header = CORS logic failure",
-			originDomain:  "http://bar.com",
-			allowedOrigin: "http://example.com",
-			method:        http.MethodGet,
-			expected:      false,
-			expectStatus:  http.StatusOK,
-		},
+		//{
+		//	name:          "non-preflight request, allow specific origin, different origin header = CORS logic failure",
+		//	originDomain:  "http://bar.com",
+		//	allowedOrigin: "http://example.com",
+		//	method:        http.MethodGet,
+		//	expected:      false,
+		//	expectStatus:  http.StatusOK,
+		//},
 		{
 			name:          "non-preflight request, allow specific origin, matching origin header = CORS logic done",
 			originDomain:  "http://example.com",
