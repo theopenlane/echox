@@ -58,7 +58,7 @@ func BindQueryParams(c Context, i interface{}) error {
 func BindBody(c Context, i interface{}) (err error) {
 	req := c.Request()
 	// https://github.com/labstack/echo/pull/2717/files
-	if req.ContentLength <= 0 {
+	if req.ContentLength == 0 {
 		return
 	}
 
