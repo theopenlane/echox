@@ -26,7 +26,7 @@ type CORSConfig struct {
 	// Optional. Default value []string{"*"}.
 	//
 	// See also: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
-	AllowOrigins []string
+	AllowOrigins []string `yaml:"allow_origins"`
 
 	// AllowOriginFunc is a custom function to validate the origin. It takes the
 	// origin as an argument and returns true if allowed or false otherwise. If
@@ -38,7 +38,7 @@ type CORSConfig struct {
 	// See https://blog.portswigger.net/2016/10/exploiting-cors-misconfigurations-for.html
 	//
 	// Optional.
-	AllowOriginFunc func(origin string) (bool, error)
+	AllowOriginFunc func(origin string) (bool, error) `yaml:"-"`
 
 	// AllowMethods determines the value of the Access-Control-Allow-Methods
 	// response header.  This header specified the list of methods allowed when
@@ -50,7 +50,7 @@ type CORSConfig struct {
 	// from `Allow` header that echox.Router set into context.
 	//
 	// See also: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods
-	AllowMethods []string
+	AllowMethods []string `yaml:"allow_methods"`
 
 	// AllowHeaders determines the value of the Access-Control-Allow-Headers
 	// response header.  This header is used in response to a preflight request to
@@ -59,7 +59,7 @@ type CORSConfig struct {
 	// Optional. Default value []string{}.
 	//
 	// See also: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers
-	AllowHeaders []string
+	AllowHeaders []string `yaml:"allow_headers"`
 
 	// AllowCredentials determines the value of the
 	// Access-Control-Allow-Credentials response header.  This header indicates
@@ -76,7 +76,7 @@ type CORSConfig struct {
 	// https://blog.portswigger.net/2016/10/exploiting-cors-misconfigurations-for.html
 	//
 	// See also: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
-	AllowCredentials bool
+	AllowCredentials bool `yaml:"allow_credentials"`
 
 	// UnsafeWildcardOriginWithAllowCredentials UNSAFE/INSECURE: allows wildcard '*' origin to be used with AllowCredentials
 	// flag. In that case we consider any origin allowed and send it back to the client with `Access-Control-Allow-Origin` header.
@@ -85,7 +85,7 @@ type CORSConfig struct {
 	// attacks. See: https://github.com/labstack/echo/issues/2400 for discussion on the subject.
 	//
 	// Optional. Default value is false.
-	UnsafeWildcardOriginWithAllowCredentials bool
+	UnsafeWildcardOriginWithAllowCredentials bool `yaml:"unsafe_wildcard_origin_with_allow_credentials"`
 
 	// ExposeHeaders determines the value of Access-Control-Expose-Headers, which
 	// defines a list of headers that clients are allowed to access.
@@ -93,16 +93,17 @@ type CORSConfig struct {
 	// Optional. Default value []string{}, in which case the header is not set.
 	//
 	// See also: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Header
-	ExposeHeaders []string
+	ExposeHeaders []string `yaml:"expose_headers"`
 
 	// MaxAge determines the value of the Access-Control-Max-Age response header.
 	// This header indicates how long (in seconds) the results of a preflight
 	// request can be cached.
+	// The header is set only if MaxAge != 0, negative value sends "0" which instructs browsers not to cache that response.
 	//
-	// Optional. Default value 0.  The header is set only if MaxAge > 0.
+	// Optional. Default value 0 - meaning header is not sent.
 	//
 	// See also: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
-	MaxAge int
+	MaxAge int `yaml:"max_age"`
 }
 
 // DefaultCORSConfig is the default CORS middleware config.
@@ -150,20 +151,34 @@ func (config CORSConfig) ToMiddleware() (echox.MiddlewareFunc, error) {
 		config.AllowMethods = DefaultCORSConfig.AllowMethods
 	}
 
-	allowOriginPatterns := []string{}
+	allowOriginPatterns := make([]*regexp.Regexp, 0, len(config.AllowOrigins))
 
 	for _, origin := range config.AllowOrigins {
+		if origin == "*" {
+			continue // "*" is handled differently and does not need regexp
+		}
+
 		pattern := regexp.QuoteMeta(origin)
 		pattern = strings.ReplaceAll(pattern, "\\*", ".*")
 		pattern = strings.ReplaceAll(pattern, "\\?", ".")
 		pattern = "^" + pattern + "$"
-		allowOriginPatterns = append(allowOriginPatterns, pattern)
+
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			panic(err)
+		}
+
+		allowOriginPatterns = append(allowOriginPatterns, re)
 	}
 
 	allowMethods := strings.Join(config.AllowMethods, ",")
 	allowHeaders := strings.Join(config.AllowHeaders, ",")
 	exposeHeaders := strings.Join(config.ExposeHeaders, ",")
-	maxAge := strconv.Itoa(config.MaxAge)
+
+	maxAge := "0"
+	if config.MaxAge > 0 {
+		maxAge = strconv.Itoa(config.MaxAge)
+	}
 
 	return func(next echox.HandlerFunc) echox.HandlerFunc {
 		return func(c echox.Context) error {
@@ -239,14 +254,14 @@ func (config CORSConfig) ToMiddleware() (echox.MiddlewareFunc, error) {
 
 				if allowOrigin == "" {
 					// to avoid regex cost by invalid (long) domains (253 is domain name max limit)
-					if len(origin) <= (5+3+253) && strings.Contains(origin, "://") {
+					if len(origin) <= (253+3+5) && strings.Contains(origin, "://") {
 						checkPatterns = true
 					}
 				}
 
 				if checkPatterns {
 					for _, re := range allowOriginPatterns {
-						if match, _ := regexp.MatchString(re, origin); match {
+						if match := re.MatchString(origin); match {
 							allowOrigin = origin
 							break
 						}
@@ -298,7 +313,7 @@ func (config CORSConfig) ToMiddleware() (echox.MiddlewareFunc, error) {
 				}
 			}
 
-			if config.MaxAge > 0 {
+			if config.MaxAge != 0 {
 				res.Header().Set(echox.HeaderAccessControlMaxAge, maxAge)
 			}
 
