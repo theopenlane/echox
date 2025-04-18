@@ -93,7 +93,7 @@ func (r routeInfo) Reverse(params ...interface{}) string {
 			for ; i < l && r.path[i] != '/'; i++ {
 			}
 
-			uri.WriteString(fmt.Sprintf("%v", params[n]))
+			fmt.Fprintf(uri, "%v", params[n])
 
 			n++
 		}

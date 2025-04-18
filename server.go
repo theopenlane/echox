@@ -192,7 +192,7 @@ func startupGreetings(sc *StartConfig, logger Logger, listener net.Listener) {
 	}
 
 	if !sc.HidePort {
-		logger.Write([]byte(fmt.Sprintf("http(s) server started on %s", listener.Addr()))) // nolint: errcheck
+		fmt.Fprintf(logger, "http(s) server started on %s", listener.Addr()) // nolint: errcheck
 	}
 }
 
