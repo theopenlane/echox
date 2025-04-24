@@ -1097,7 +1097,7 @@ func (r *DefaultRouter) Route(c RoutableContext) HandlerFunc {
 
 	if matchedRouteMethod != nil {
 		rHandler = matchedRouteMethod.handler
-		rPath = matchedRouteMethod.routeInfo.path
+		rPath = matchedRouteMethod.path
 		rInfo = matchedRouteMethod.routeInfo
 	} else {
 		// use previous match as basis. although we have no matching handler we have path match.

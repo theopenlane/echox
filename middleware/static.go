@@ -224,7 +224,7 @@ func (config StaticConfig) ToMiddleware() (echox.MiddlewareFunc, error) {
 				}
 
 				var he *echox.HTTPError
-				if !(errors.As(err, &he) && config.HTML5 && he.Code == http.StatusNotFound) {
+				if !errors.As(err, &he) || !config.HTML5 || he.Code != http.StatusNotFound {
 					return err
 				}
 				// is case HTML5 mode is enabled + echo 404 we serve index to the client

@@ -71,7 +71,7 @@ func (config BasicAuthConfig) ToMiddleware() (echox.MiddlewareFunc, error) {
 
 			l := len(basic)
 			for _, auth := range c.Request().Header[echox.HeaderAuthorization] {
-				if !(len(auth) > l+1 && strings.EqualFold(auth[:l], basic)) {
+				if len(auth) <= l+1 || !strings.EqualFold(auth[:l], basic) {
 					continue
 				}
 

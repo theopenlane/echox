@@ -244,7 +244,7 @@ func New() *Echo {
 		JSONSerializer: &DefaultJSONSerializer{},
 
 		routers: make(map[string]Router),
-		routerCreator: func(ec *Echo) Router {
+		routerCreator: func(_ *Echo) Router {
 			return NewRouter(RouterConfig{})
 		},
 	}
