@@ -6,7 +6,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasttemplate v1.2.2
-	golang.org/x/time v0.11.0
+	golang.org/x/time v0.12.0
 )
 
 require golang.org/x/text v0.24.0 // indirect
