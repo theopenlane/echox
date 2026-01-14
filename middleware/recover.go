@@ -8,6 +8,11 @@ import (
 	"github.com/theopenlane/echox"
 )
 
+// LogErrorFunc defines a function for custom logging in the middleware.
+// It receives the context, recovered error, and stack trace as separate parameters.
+// If this function returns nil, the centralized HTTPErrorHandler will not be called.
+type LogErrorFunc func(c echox.Context, err error, stack []byte) error
+
 // RecoverConfig defines the config for Recover middleware.
 type RecoverConfig struct {
 	// Skipper defines a function to skip middleware.
@@ -25,14 +30,27 @@ type RecoverConfig struct {
 	// DisablePrintStack disables printing stack trace.
 	// Optional. Default value as false.
 	DisablePrintStack bool
+
+	// LogErrorFunc defines a function for custom logging in the middleware.
+	// If set, this function handles logging instead of the default behavior
+	// which embeds the stack trace in the error message.
+	// If this function returns nil, the centralized HTTPErrorHandler will not be called.
+	LogErrorFunc LogErrorFunc
+
+	// DisableErrorHandler disables the call to centralized HTTPErrorHandler.
+	// The recovered error is then passed back to upstream middleware, instead of swallowing the error.
+	// Optional. Default value false.
+	DisableErrorHandler bool
 }
 
 // DefaultRecoverConfig is the default Recover middleware config.
 var DefaultRecoverConfig = RecoverConfig{
-	Skipper:           DefaultSkipper,
-	StackSize:         4 << 10, // 4 KB
-	DisableStackAll:   false,
-	DisablePrintStack: false,
+	Skipper:             DefaultSkipper,
+	StackSize:           4 << 10, // 4 KB
+	DisableStackAll:     false,
+	DisablePrintStack:   false,
+	LogErrorFunc:        nil,
+	DisableErrorHandler: true,
 }
 
 // Recover returns a middleware which recovers from panics anywhere in the chain
@@ -48,7 +66,6 @@ func RecoverWithConfig(config RecoverConfig) echox.MiddlewareFunc {
 
 // ToMiddleware converts RecoverConfig to middleware or returns an error for invalid configuration
 func (config RecoverConfig) ToMiddleware() (echox.MiddlewareFunc, error) {
-	// Defaults
 	if config.Skipper == nil {
 		config.Skipper = DefaultRecoverConfig.Skipper
 	}
@@ -58,7 +75,7 @@ func (config RecoverConfig) ToMiddleware() (echox.MiddlewareFunc, error) {
 	}
 
 	return func(next echox.HandlerFunc) echox.HandlerFunc {
-		return func(c echox.Context) (err error) {
+		return func(c echox.Context) (returnErr error) {
 			if config.Skipper(c) {
 				return next(c)
 			}
@@ -69,18 +86,29 @@ func (config RecoverConfig) ToMiddleware() (echox.MiddlewareFunc, error) {
 						panic(r)
 					}
 
-					tmpErr, ok := r.(error)
+					err, ok := r.(error)
 					if !ok {
-						tmpErr = fmt.Errorf("%v", r)
+						err = fmt.Errorf("%v", r)
 					}
 
+					var stack []byte
 					if !config.DisablePrintStack {
-						stack := make([]byte, config.StackSize)
+						stack = make([]byte, config.StackSize)
 						length := runtime.Stack(stack, !config.DisableStackAll)
-						tmpErr = fmt.Errorf("[PANIC RECOVER] %w %s", tmpErr, stack[:length])
+						stack = stack[:length]
 					}
 
-					err = tmpErr
+					if config.LogErrorFunc != nil {
+						err = config.LogErrorFunc(c, err, stack)
+					} else if !config.DisablePrintStack {
+						err = fmt.Errorf("[PANIC RECOVER] %w %s", err, stack)
+					}
+
+					if err != nil && !config.DisableErrorHandler {
+						c.Error(err)
+					} else {
+						returnErr = err
+					}
 				}
 			}()
 

@@ -102,7 +102,8 @@ func TestRecoverWithConfig(t *testing.T) {
 		{
 			name: "ok, DisablePrintStack",
 			whenConfig: RecoverConfig{
-				DisablePrintStack: true,
+				DisablePrintStack:   true,
+				DisableErrorHandler: true,
 			},
 			expectErr: "testPANIC",
 		},
@@ -138,4 +139,99 @@ func TestRecoverWithConfig(t *testing.T) {
 			assert.Equal(t, http.StatusOK, rec.Code) // status is still untouched. err is returned from middleware chain
 		})
 	}
+}
+
+func TestRecoverWithLogErrorFunc(t *testing.T) {
+	var testCases = []struct {
+		name             string
+		whenConfig       RecoverConfig
+		expectErrContain string
+		expectNoErr      bool
+	}{
+		{
+			name: "ok, LogErrorFunc receives stack and returns modified error",
+			whenConfig: RecoverConfig{
+				DisableErrorHandler: true,
+				LogErrorFunc: func(c echox.Context, err error, stack []byte) error {
+					assert.Equal(t, "testPANIC", err.Error())
+					assert.Contains(t, string(stack), "goroutine")
+					return echox.NewHTTPError(http.StatusInternalServerError, "handled panic")
+				},
+			},
+			expectErrContain: "handled panic",
+		},
+		{
+			name: "ok, LogErrorFunc returns nil suppresses error",
+			whenConfig: RecoverConfig{
+				DisableErrorHandler: true,
+				LogErrorFunc: func(c echox.Context, err error, stack []byte) error {
+					return nil
+				},
+			},
+			expectNoErr: true,
+		},
+		{
+			name: "ok, LogErrorFunc with DisablePrintStack receives nil stack",
+			whenConfig: RecoverConfig{
+				DisableErrorHandler: true,
+				DisablePrintStack:   true,
+				LogErrorFunc: func(c echox.Context, err error, stack []byte) error {
+					assert.Nil(t, stack)
+					return err
+				},
+			},
+			expectErrContain: "testPANIC",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := echox.New()
+
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			h := RecoverWithConfig(tc.whenConfig)(func(c echox.Context) error {
+				panic("testPANIC")
+			})
+
+			err := h(c)
+
+			if tc.expectNoErr {
+				assert.NoError(t, err)
+			} else if tc.expectErrContain != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectErrContain)
+			}
+
+			assert.Equal(t, http.StatusOK, rec.Code)
+		})
+	}
+}
+
+func TestRecoverWithDisableErrorHandler(t *testing.T) {
+	e := echox.New()
+
+	var errorHandlerCalled bool
+	e.HTTPErrorHandler = func(c echox.Context, err error) {
+		errorHandlerCalled = true
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	config := RecoverConfig{
+		DisableErrorHandler: false,
+	}
+
+	h := RecoverWithConfig(config)(func(c echox.Context) error {
+		panic("testPANIC")
+	})
+
+	err := h(c)
+
+	assert.NoError(t, err) // error is handled by HTTPErrorHandler, not returned
+	assert.True(t, errorHandlerCalled)
 }
