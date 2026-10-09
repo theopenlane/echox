@@ -31,9 +31,9 @@ steps:
         if: build.branch == "main"
         depends_on: ["go_test"]
         plugins:
-          - artifacts#v1.9.4:
+          - artifacts#v1.11.0:
               download: results.txt
-          - artifacts#v1.9.4:
+          - artifacts#v1.11.0:
               download: coverage.out
               step: "go_test"
           - docker#v5.13.0:
